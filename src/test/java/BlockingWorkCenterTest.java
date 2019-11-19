@@ -1,9 +1,10 @@
 import com.alibaba.fastjson.JSONObject;
 import com.blqw.dataflow.define.IBatchData;
-import org.junit.jupiter.api.Test;
+import com.blqw.dataflow.impl.BatchData;
 import com.blqw.work.core.WorkSettings;
 import com.blqw.work.define.IDataReader;
 import com.blqw.work.impl.SingleBlockingWorkCenter;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,7 +34,7 @@ class BlockingWorkCenterTest {
         SingleBlockingWorkCenter<JSONObject> workCenter = new SingleBlockingWorkCenter<>(settings);
         workCenter.startAsync(4, 10);
         workCenter.await();
-        new Thread(()-> {
+        new Thread(() -> {
             workCenter.await();
         });
         assert counter.intValue() == 7000;
@@ -54,7 +55,10 @@ class BlockingWorkCenterTest {
         @Override
         public IBatchData<JSONObject> get(String cursor, Integer size) {
 
-            final int id = cursor == null || cursor.length() == 0 ? start : Integer.parseInt(cursor);
+            final int id = cursor == null || cursor.length() == 0 ? start : Integer.parseInt(cursor) + 1;
+            if (id >= end) {
+                return BatchData.end;
+            }
             size = size == null ? 94 : size;
             List<JSONObject> data = new ArrayList<>();
             for (int i = 0; i < size; i++) {
@@ -63,22 +67,7 @@ class BlockingWorkCenterTest {
                 }
                 data.add(new JSONObject().fluentPut("ID", id + i).fluentPut("NAME", prefix + ":" + (id + i)));
             }
-            return new IBatchData<JSONObject>() {
-                @Override
-                public boolean isEnd() {
-                    return data.size() == 0 || data.get(data.size() - 1).getIntValue("ID") >= end;
-                }
-
-                @Override
-                public String cursor() {
-                    return data.size() == 0 ? "" : (data.get(data.size() - 1).getIntValue("ID") + 1) + "";
-                }
-
-                @Override
-                public List<JSONObject> data() {
-                    return data;
-                }
-            };
+            return new BatchData<>(data.size() < size, data.get(data.size() - 1).getString("ID"), data);
         }
     }
 }

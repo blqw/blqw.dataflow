@@ -1,5 +1,6 @@
 import com.alibaba.fastjson.JSONObject;
 import com.blqw.dataflow.define.IBatchData;
+import com.blqw.dataflow.impl.BatchData;
 import org.junit.jupiter.api.Test;
 import com.blqw.work.core.WorkException;
 import com.blqw.work.core.WorkSettings;
@@ -30,7 +31,7 @@ class BlockingWorkCenterTest2HasError {
                 throw new WorkException("547异常");
             }
             counter.incrementAndGet();
-            System.out.println(data.toJSONString());
+            System.out.println(data.getString("ID"));
         });
         settings.setKeyFetcher(x -> x.getString("ID"));
 
@@ -38,7 +39,8 @@ class BlockingWorkCenterTest2HasError {
         workCenter.startAsync(4, 10);
 
         workCenter.await();
-        assert counter.intValue() == 7000;
+        System.out.println(counter.intValue());
+        assert counter.intValue() == 7000 - 7;
         System.out.println("完成");
     }
 
@@ -49,14 +51,17 @@ class BlockingWorkCenterTest2HasError {
 
         public TestReader(int start, String prefix) {
             this.start = start;
-            this.end = start + 1000;
+            this.end = start + 999;
             this.prefix = prefix;
         }
 
         @Override
         public IBatchData<JSONObject> get(String cursor, Integer size) {
             size = size == null ? 94 : size;
-            final int id = cursor == null || cursor.length() == 0 ? start : Integer.parseInt(cursor);
+            final int id = cursor == null || cursor.length() == 0 ? start : Integer.parseInt(cursor) + 1;
+            if (id >= end) {
+                return BatchData.end;
+            }
             List<JSONObject> data = new ArrayList<>();
             for (int i = 0; i < size; i++) {
                 if (id + i > end) {
@@ -64,22 +69,7 @@ class BlockingWorkCenterTest2HasError {
                 }
                 data.add(new JSONObject().fluentPut("ID", id + i).fluentPut("NAME", prefix + ":" + (id + i)));
             }
-            return new IBatchData<JSONObject>() {
-                @Override
-                public boolean isEnd() {
-                    return data.size() == 0 || data.get(data.size() - 1).getIntValue("ID") >= end;
-                }
-
-                @Override
-                public String cursor() {
-                    return data.size() == 0 ? "" : (data.get(data.size() - 1).getIntValue("ID") + 1) + "";
-                }
-
-                @Override
-                public List<JSONObject> data() {
-                    return data;
-                }
-            };
+            return new BatchData<>(data.size() < size, data.get(data.size() - 1).getString("ID"), data);
         }
     }
 }

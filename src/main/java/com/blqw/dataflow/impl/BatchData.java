@@ -2,14 +2,33 @@ package com.blqw.dataflow.impl;
 
 import com.blqw.dataflow.define.IBatchData;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
  * 表示一批数据
- * @author blqw
+ *
  * @param <T>
+ * @author blqw
  */
 public class BatchData<T> implements IBatchData<T> {
+
+    public static IBatchData end = new IBatchData() {
+        @Override
+        public boolean isEnd() {
+            return true;
+        }
+
+        @Override
+        public String cursor() {
+            return "";
+        }
+
+        @Override
+        public List data() {
+            return new ArrayList();
+        }
+    };
 
     public final boolean isEnd;
     public final String cursor;

@@ -1,5 +1,6 @@
 import com.alibaba.fastjson.JSONObject;
 import com.blqw.dataflow.define.IBatchData;
+import com.blqw.dataflow.impl.BatchData;
 import org.junit.jupiter.api.Test;
 import com.blqw.work.core.WorkCanceledException;
 import com.blqw.work.core.WorkException;
@@ -63,7 +64,7 @@ class BlockingWorkCenterTest3StartError {
 
         public TestReader(int start, String prefix) {
             this.start = start;
-            this.end = start + 1000;
+            this.end = start + 999;
             this.prefix = prefix;
         }
 
@@ -71,7 +72,10 @@ class BlockingWorkCenterTest3StartError {
         @Override
         public IBatchData<JSONObject> get(String cursor, Integer size) {
             size = size == null ? 94 : size;
-            final int id = cursor == null || cursor.length() == 0 ? start : Integer.parseInt(cursor);
+            final int id = cursor == null || cursor.length() == 0 ? start : Integer.parseInt(cursor) + 1;
+            if (id >= end) {
+                return BatchData.end;
+            }
             List<JSONObject> data = new ArrayList<>();
             for (int i = 0; i < size; i++) {
                 if (id + i > end) {
@@ -79,27 +83,7 @@ class BlockingWorkCenterTest3StartError {
                 }
                 data.add(new JSONObject().fluentPut("ID", id + i).fluentPut("NAME", prefix + ":" + (id + i)));
             }
-            return new IBatchData<JSONObject>() {
-                @Override
-                public boolean isEnd() {
-                    return data.size() == 0 || data.get(data.size() - 1).getIntValue("ID") >= end;
-                }
-
-                @Override
-                public String cursor() {
-                    return data.size() == 0 ? "" : (data.get(data.size() - 1).getIntValue("ID") + 1) + "";
-                }
-
-                @Override
-                public List<JSONObject> data() {
-                    return data;
-                }
-            };
+            return new BatchData<>(data.size() < size, data.get(data.size() - 1).getString("ID"), data);
         }
-
-        public IBatchData<JSONObject> get(String cursor) {
-            return get(cursor, 94);
-        }
-
     }
 }

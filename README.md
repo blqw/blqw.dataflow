@@ -60,7 +60,7 @@ public interface IDataInput<T> {
 ```
 
 ### 3. `IDataKeyFetcher<T>`(主键提取器)
-[>源码<](src/main/java/com/blqw/work/define/IDataKeyFetcher.java)  
+[>源码<](src/main/java/com/blqw/dataflow/define/IDataKeyFetcher.java)  
 > 用于返回数据中的唯一标识
 ```java
 @FunctionalInterface
@@ -70,7 +70,7 @@ public interface IDataKeyFetcher<T> {
 ```
 
 ### 4. `IStringCache`(缓存组件)
-[>源码<](src/main/java/com/blqw/work/define/IStringCache.java)  
+[>源码<](src/main/java/com/blqw/dataflow/define/IStringCache.java)  
 > 用于暂时缓存已经处理的数据唯一标识
 ```java
 public interface IStringCache {

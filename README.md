@@ -137,6 +137,27 @@ public interface IWorkSnapshoter {
 2019-11-18 16:49:09.614  com.blqw.work.impl.BlockingWorkCenter[2E23D1E3A9964510B69909A1EDDA2240] >> 退出...
 ```
 
+## ☆ 异常中断后的恢复
+```java
+// 创建工作中心
+SingleBlockingWorkCenter<JSONObject> workCenter = new SingleBlockingWorkCenter<>(settings);
+// 记录本次工作的凭证
+this.ticket = workCenter.ticket;
+// 开始工作(读取线程数, 处理线程数)
+workCenter.startAsync(4, 10);
+// 等待工作完成
+workCenter.await();
+
+// 意外断开后的重启, 传入上次的工作凭证
+SingleBlockingWorkCenter<JSONObject> workCenter = new SingleBlockingWorkCenter<>(this.ticket, settings);
+// 如果存在IWorkSnapshoter快照组件, 则会自动恢复上次工作中断时的游标
+// 如果存在IStringCache和IDataKeyFetcher, 则会跳过已经被处理的数据
+workCenter.startAsync(4, 10);
+
+workCenter.await();
+
+```
+
 ## 更新说明 
 #### [1.0.0.0] 2019.11.19
 * 初始版本
